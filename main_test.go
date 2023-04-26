@@ -142,3 +142,65 @@ func TestAllowedPieces(t *testing.T) {
 		})
 	}
 }
+
+func TestRequiredPieces(t *testing.T) {
+	tests := []struct {
+		name     string
+		fen      string
+		required []rune
+		expected bool
+	}{
+		{
+			name:     "all pieces",
+			fen:      "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
+			required: []rune{'r', 'n', 'k', 'p', 'P', 'N', 'Q', 'B'},
+			expected: true,
+		},
+
+		{
+			name:     "no white knight",
+			fen:      "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/R1BQKB1R b KQkq e3 0 1",
+			required: []rune{'k', 'K', 'r', 'R', 'n', 'N'},
+			expected: false,
+		},
+
+		{
+			name:     "knight and bishop required",
+			fen:      "8/8/3p2p1/1k2bp2/p3pN1P/4P3/PPKN3P/8 b - - 0 31",
+			required: []rune{'k', 'K', 'N', 'b'},
+			expected: true,
+		},
+
+		{
+			name:     "knight required ",
+			fen:      "8/8/3p2p1/1k2bp2/p3pN1P/4P3/PPKN3P/8 b - - 0 31",
+			required: []rune{'k', 'K', 'N'},
+			expected: true,
+		},
+
+		{
+			name:     "no bishop",
+			fen:      "8/8/3p2p1/1k3p2/p3pP1P/8/PPKN3P/8 b - - 0 32",
+			required: []rune{'k', 'K', 'N', 'b'},
+			expected: false,
+		},
+
+		{
+			name:     "both knights required",
+			fen:      "6r1/pp4nk/2p4p/3pP3/3P1Pp1/P2P4/1P2NRKP/8 w - - 1 32",
+			required: []rune{'N', 'n'},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			got := RequiredPieces(tt.fen, tt.required)
+			if got != tt.expected {
+				t.Fatalf("expected %v, got %v", tt.expected, got)
+			}
+
+		})
+	}
+}

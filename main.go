@@ -23,8 +23,11 @@ func main() {
 	var month string
 	flag.StringVar(&month, "month", "3", "Month.")
 
-	var pieces string
-	flag.StringVar(&pieces, "pieces", "kKpP", "Pieces allowed.")
+	var allowed string
+	flag.StringVar(&allowed, "allowed", "kKpP", "Pieces allowed.")
+
+	var required string
+	flag.StringVar(&required, "required", "kKpP", "Pieces required.")
 
 	var numPieces int
 	flag.IntVar(&numPieces, "num", 8, "Max num of pieces allowed.")
@@ -57,13 +60,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := download(user, month, year, []rune(pieces), move, duration); err != nil {
+	if err := download(user, month, year, []rune(allowed), []rune(required), move, duration); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 }
 
-func download(user string, month string, year string, allowed []rune, startMove int, duration int) error {
+func download(user string, month string, year string, allowed []rune, required []rune, startMove int, duration int) error {
 	url := fmt.Sprintf("https://api.chess.com/pub/player/%s/games/%s/%s/pgn", user, year, month)
 
 	resp, err := http.Get(url)
@@ -96,19 +99,19 @@ func download(user string, month string, year string, allowed []rune, startMove 
 				continue
 			}
 
-			num := false
-			if NumPieces(move.PostPosition.String()) < 8 {
-				num = true
+			if NumPieces(move.PostPosition.String()) > 8 {
+				continue
 			}
 
-			allow := false
-			if AllowedPieces(move.PostPosition.String(), allowed) {
-				allow = true
+			if !AllowedPieces(move.PostPosition.String(), allowed) {
+				continue
 			}
 
-			if num && allow {
-				cnt++
+			if !RequiredPieces(move.PostPosition.String(), required) {
+				continue
 			}
+
+			cnt++
 		}
 
 		if cnt >= duration {
@@ -158,6 +161,35 @@ func AllowedPieces(fen string, allowed []rune) bool {
 		}
 
 		if !found {
+			return false
+		}
+	}
+
+	return true
+}
+
+func RequiredPieces(fen string, required []rune) bool {
+	ss := strings.Split(fen, " ")
+	if len(ss) < 1 {
+		return false
+	}
+
+	visit := make(map[rune]bool)
+	for _, r := range required {
+		visit[r] = false
+	}
+
+	pieces := ss[0]
+	for _, c := range pieces {
+		if c == '/' || (c >= '0' && c <= '9') {
+			continue
+		}
+
+		visit[c] = true
+	}
+
+	for _, v := range visit {
+		if !v {
 			return false
 		}
 	}
